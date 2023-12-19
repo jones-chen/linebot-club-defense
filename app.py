@@ -8,8 +8,10 @@ app = Flask(__name__)
 # 一、參數設定
 # 1. LINE Bot - Channel Access Token, Channel Secret
 # https://developers.line.biz/console/channel/2002323663/basics
-ChannelAccessToken = "VNCu7mavfcXIhfc5imUjuk3PexGzpNlWSBIL0FysEjLGo7WpAuL81dk+pgnsgRiZoe6bT80r0GqbJlmU6fEiVP4KCLNJVQL8rz9wbS6VVxJgJEX8/ih6/UMNXLx6O8XO8R7PRcTZ88RB9VT3ANzxFQdB04t89/1O/w1cDnyilFU="
-ChannelSecret  = "246b34c7daaafaa17694fdf88e4775fd"
+inputFile = "line_data.txt"  # 替换为您的文件路径
+with open(inputFile, "r", encoding="utf8") as file_in:
+    ChannelAccessToken, ChannelSecret = file_in.read().split('\n')
+
 line_bot_api = LineBotApi(ChannelAccessToken)
 handler = WebhookHandler(ChannelSecret)
 
