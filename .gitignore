@@ -13,4 +13,4 @@ node_modules
 *.log
 *.gz
 
-line_data
+line_data.txt
