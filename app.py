@@ -1,9 +1,20 @@
+'''
+功能參考：https://www.sacro.tw/linebot/
+https://github.com/boybundit/linebot
+'''
+
 from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
+import os
+import linebot
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from linebot.exceptions import LineBotApiError
+from linebot.exceptions import InvalidSignatureError
+
 
 app = Flask(__name__)
+if __name__ == "__main__":
+    # port = int(os.environ.get('PORT', 5000))     
+    # app.run(host='0.0.0.0', port=port)
+    app.run()
 
 # 一、參數設定
 # 1. LINE Bot - Channel Access Token, Channel Secret
@@ -12,14 +23,12 @@ inputFile = "line_data.txt"  # 替换为您的文件路径
 with open(inputFile, "r", encoding="utf8") as file_in:
     ChannelAccessToken, ChannelSecret = file_in.read().split('\n')
 
-line_bot_api = LineBotApi(ChannelAccessToken)
-handler = WebhookHandler(ChannelSecret)
-
-# 存儲用戶權限的字典
-user_permissions = {}
+line_bot_api = linebot.LineBotApi(ChannelAccessToken)
+handler = linebot.WebhookHandler(ChannelSecret)
 
 # 設定機器人的 ID，這可以在加入群組事件中獲取
 BOT_ID = 'YOUR_BOT_ID'
+BOT_STATUS = True 
 
 # 設定管理員和共同管理員的權限
 ADMIN = 3
@@ -38,59 +47,15 @@ userList = [
     {'name':'somebody','permission':1}
 ]
 
+# 存儲用戶權限的字典
+user_permissions = {}
 
-# 定義 LINE 機器人的 Webhook 路由
-@handler.add(JoinEvent)
-def handle_join_event(event):
-    group_id = event.source.group_id
-    admin_user_id = event.source.user_id
-
-    # 在用戶權限字典中添加管理員
-    user_permissions[admin_user_id] = ADMIN
-
-# 定義 LINE 機器人的 Webhook 路由
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    user_id = event.source.user_id
-    message_text = event.message.text
-
-    # 檢查用戶權限，若不存在則預設為一般成員
-    user_permission = user_permissions.get(user_id, NORMAL_MEMBER)
-
-    if message_text.startswith('/kick'):
-        # 檢查權限
-        if user_permission >= CO_ADMIN:
-            target_user_id = message_text.split(' ')[1]
-            kick_user(target_user_id)
-        else:
-            reply_message(event.reply_token, '權限不足，無法踢出成員。')
-
-    elif message_text.startswith('/flip_group'):
-        # 檢查權限
-        if user_permission >= CO_ADMIN:
-            flip_group(user_id)
-        else:
-            reply_message(event.reply_token, '權限不足，無法翻群。')
-
-# 定義踢出用戶的函數
-def kick_user(user_id):
-    try:
-        line_bot_api.kick_chat_member('YOUR_GROUP_ID', user_id)
-    except LineBotApiError as e:
-        print(e)
-
-# 定義翻群的函數
-def flip_group(admin_user_id):
-    # 檢查一分鐘內翻群次數(若權限小於共同管理員，時間內，踢出人數超過上限)
-    for user_id, permission in userList :
-        if permission < CO_ADMIN and KickTimeCount <= KICK_TIME_THRESHOLD and KickPeopleNum >= KICK_PEOPLE_NUM_THRESHOLD]
-    
-    # 踢除觸發條件的用戶
-    kick_user(user_id)
-
-# 處理回覆訊息的函數
-def reply_message(reply_token, text):
-    line_bot_api.reply_message(reply_token, TextSendMessage(text=text))
+# 二、監聽路由
+# 首頁
+@app.route('/', methods=['GET'])
+def home():
+    print("Welcome to KP Protector!")
+    return "Welcome to KP Protector!"
 
 # 處理 LINE 機器人的 Webhook
 @app.route("/callback", methods=['POST'])
@@ -103,6 +68,63 @@ def callback():
         abort(400)
     return 'OK'
 
+# # 接收使用者訊息
+# @handler.add(MessageEvent, message=TextMessage)
+# def handle_message(event):
+#     print("接收使用者訊息")
+#     user_id = event.source.user_id
+#     userInput = event.message.text
+#     print(f'user_id:{user_id}, userInput:{userInput}')
+    
+#     # 回傳訊息
+#     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f'收到訊息'))
 
-if __name__ == "__main__":
-    app.run()
+#     # 檢查用戶權限，若不存在則預設為一般成員
+#     # user_permission = user_permissions.get(user_id, NORMAL_MEMBER)
+
+#     # if userInput.startswith('/kick'):
+#     #     # 檢查權限
+#     #     if user_permission >= CO_ADMIN:
+#     #         target_user_id = userInput.split(' ')[1]
+#     #         kick_user(target_user_id)
+#     #     else:
+#     #         reply_message(event.reply_token, '權限不足，無法踢出成員。')
+
+#     # elif userInput.startswith('/flip_group'):
+#     #     # 檢查權限
+#     #     if user_permission >= CO_ADMIN:
+#     #         flip_group(user_id)
+#     #     else:
+#     #         reply_message(event.reply_token, '權限不足，無法翻群。')
+
+
+
+
+# # 將帳號加入群組的時候
+# @handler.add(JoinEvent)
+# def handle_join_event(event):
+#     print("加入群組")
+#     group_id = event.source.group_id
+#     admin_user_id = event.source.user_id
+#     print(f'group_id:{group_id}')
+#     print(f'admin_user_id:{admin_user_id}')
+    
+#     # # 在用戶權限字典中添加管理員
+#     # user_permissions[admin_user_id] = ADMIN
+
+
+# # 定義翻群的函數
+# def checkKickLevel(admin_user_id):
+#     # 檢查踢人的人，若權限小於共同管理員，而且時間內，踢出人數超過上限)
+#     for user_id, permission in admin_user_id :
+#         if permission < CO_ADMIN and KickTimeCount <= KICK_TIME_THRESHOLD and KickPeopleNum >= KICK_PEOPLE_NUM_THRESHOLD:
+#             # 踢除觸發條件的用戶
+#             kick_user(user_id)
+#             return '你亂踢人，我踢你'
+#         else:
+#             return '可以繼續踢'
+
+
+
+
+
